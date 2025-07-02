@@ -24,7 +24,7 @@ def hex_to_rgb(hex_color):
     
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
-def make_transparent_and_crop(image_path, target_color_rgb, output_path):
+def make_transparent_and_crop(image_path, target_color_rgb, output_path, tolerance=0):
     """指定色を透過にして画像をトリミング"""
     img = Image.open(image_path).convert('RGBA')
     data = np.array(img)
@@ -32,8 +32,16 @@ def make_transparent_and_crop(image_path, target_color_rgb, output_path):
     # RGBチャンネルを抽出
     r, g, b, a = data[:,:,0], data[:,:,1], data[:,:,2], data[:,:,3]
     
-    # 指定色のピクセルを透過に
-    mask = (r == target_color_rgb[0]) & (g == target_color_rgb[1]) & (b == target_color_rgb[2])
+    # 指定色のピクセルを透過に（許容誤差を考慮）
+    if tolerance == 0:
+        mask = (r == target_color_rgb[0]) & (g == target_color_rgb[1]) & (b == target_color_rgb[2])
+    else:
+        # 各チャンネルの差分を計算
+        dr = np.abs(r - target_color_rgb[0])
+        dg = np.abs(g - target_color_rgb[1])
+        db = np.abs(b - target_color_rgb[2])
+        mask = (dr <= tolerance) & (dg <= tolerance) & (db <= tolerance)
+    
     data[mask] = [0, 0, 0, 0]
     
     # 新しい画像を作成
@@ -85,32 +93,55 @@ def main():
                 print(f"\nエラー: {e}")
                 print("もう一度入力してください")
     
-    print(f"透過色: #{color_code.lstrip('#')} (RGB: {target_color_rgb})")
+    print(f"\n透過色: #{color_code.lstrip('#')} (RGB: {target_color_rgb})")
     
-    # 現在のディレクトリ内のPNGファイルを取得
-    png_files = [f for f in os.listdir('.') if f.lower().endswith('.png') and not f.endswith('-touka.png')]
+    # 許容誤差の入力
+    tolerance = 0
+    if not args.color:  # 対話式モードの場合のみ
+        print("\n色域の許容誤差を入力してください（0-255）")
+        print("0: 完全一致のみ, 10: わずかな差を許容, 30: 大きな差を許容")
+        while True:
+            tolerance_input = input("許容誤差 [0]: ").strip()
+            if not tolerance_input:
+                tolerance = 0
+                break
+            try:
+                tolerance = int(tolerance_input)
+                if 0 <= tolerance <= 255:
+                    break
+                else:
+                    print("エラー: 0から255の範囲で入力してください")
+            except ValueError:
+                print("エラー: 整数を入力してください")
     
-    if not png_files:
-        print("エラー: PNGファイルが見つかりません。")
+    if tolerance > 0:
+        print(f"許容誤差: {tolerance}")
+    
+    # 現在のディレクトリ内の画像ファイルを取得
+    image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.tif', '.webp')
+    image_files = [f for f in os.listdir('.') if f.lower().endswith(image_extensions) and not f.endswith('-touka.png')]
+    
+    if not image_files:
+        print("エラー: 画像ファイルが見つかりません。")
         if sys.platform == "win32" or not sys.stdin.isatty():
             input("\nEnterキーを押して終了...")
         sys.exit(1)
     
-    print(f"{len(png_files)}個のPNGファイルを処理します...")
+    print(f"\n{len(image_files)}個の画像ファイルを処理します...")
     
     success_count = 0
-    for png_file in png_files:
-        base_name = os.path.splitext(png_file)[0]
+    for image_file in image_files:
+        base_name = os.path.splitext(image_file)[0]
         output_file = f"{base_name}-touka.png"
         
         try:
-            if make_transparent_and_crop(png_file, target_color_rgb, output_file):
-                print(f"✓ {png_file} → {output_file}")
+            if make_transparent_and_crop(image_file, target_color_rgb, output_file, tolerance):
+                print(f"✓ {image_file} → {output_file}")
                 success_count += 1
         except Exception as e:
-            print(f"✗ {png_file} の処理中にエラーが発生しました: {e}")
+            print(f"✗ {image_file} の処理中にエラーが発生しました: {e}")
     
-    print(f"\n処理完了: {success_count}/{len(png_files)} ファイル")
+    print(f"\n処理完了: {success_count}/{len(image_files)} ファイル")
     
     # Windows環境でウィンドウがすぐ閉じないようにする
     if sys.platform == "win32" or not sys.stdin.isatty():
