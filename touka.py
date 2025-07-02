@@ -64,6 +64,8 @@ def main():
         except ValueError as e:
             print(f"エラー: {e}")
             print(f"無効なカラーコードです: {color_code}")
+            if sys.platform == "win32" or not sys.stdin.isatty():
+                input("\nEnterキーを押して終了...")
             sys.exit(1)
     else:
         # 対話式モードの場合、正しい入力まで繰り返す
@@ -90,6 +92,8 @@ def main():
     
     if not png_files:
         print("エラー: PNGファイルが見つかりません。")
+        if sys.platform == "win32" or not sys.stdin.isatty():
+            input("\nEnterキーを押して終了...")
         sys.exit(1)
     
     print(f"{len(png_files)}個のPNGファイルを処理します...")
@@ -113,4 +117,15 @@ def main():
         input("\nEnterキーを押して終了...")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n処理が中断されました")
+        if sys.platform == "win32" or not sys.stdin.isatty():
+            input("Enterキーを押して終了...")
+    except Exception as e:
+        print(f"\n\n予期しないエラーが発生しました: {e}")
+        import traceback
+        traceback.print_exc()
+        if sys.platform == "win32" or not sys.stdin.isatty():
+            input("\nEnterキーを押して終了...")
