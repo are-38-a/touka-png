@@ -29,7 +29,7 @@ touka.exe #FFFFFF
 
 ### リリースページから実行ファイルをダウンロード
 
-[Releases](https://github.com/[your-username]/touka-png/releases) から各OS用の実行ファイルをダウンロードできます。
+[Releases](https://github.com/are-38-a/touka-png/releases) から各OS用の実行ファイルをダウンロードできます。
 
 - Windows: `touka-windows.exe`
 - Linux: `touka-linux`
