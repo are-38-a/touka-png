@@ -38,17 +38,25 @@ def make_transparent_and_crop(image_path, target_color_rgb, output_path):
 
 def main():
     parser = argparse.ArgumentParser(description='指定色を透過にしてPNG画像をトリミング')
-    parser.add_argument('color', help='透過にする色のカラーコード (例: #FFFFFF または FFFFFF)')
+    parser.add_argument('color', nargs='?', help='透過にする色のカラーコード (例: #FFFFFF または FFFFFF)')
     args = parser.parse_args()
+    
+    # カラーコードを取得（引数がない場合は入力を求める）
+    if args.color:
+        color_code = args.color
+    else:
+        print("透過にする色のカラーコードを入力してください")
+        print("例: FFFFFF (白), 000000 (黒), FF0000 (赤)")
+        color_code = input("カラーコード: ").strip()
     
     # カラーコードをRGBに変換
     try:
-        target_color_rgb = hex_to_rgb(args.color)
+        target_color_rgb = hex_to_rgb(color_code)
     except Exception as e:
-        print(f"エラー: 無効なカラーコードです - {args.color}")
+        print(f"エラー: 無効なカラーコードです - {color_code}")
         sys.exit(1)
     
-    print(f"透過色: #{args.color.lstrip('#')} (RGB: {target_color_rgb})")
+    print(f"透過色: #{color_code.lstrip('#')} (RGB: {target_color_rgb})")
     
     # 現在のディレクトリ内のPNGファイルを取得
     png_files = [f for f in os.listdir('.') if f.lower().endswith('.png') and not f.endswith('-touka.png')]
@@ -72,6 +80,10 @@ def main():
             print(f"✗ {png_file} の処理中にエラーが発生しました: {e}")
     
     print(f"\n処理完了: {success_count}/{len(png_files)} ファイル")
+    
+    # Windows環境でウィンドウがすぐ閉じないようにする
+    if sys.platform == "win32" or not sys.stdin.isatty():
+        input("\nEnterキーを押して終了...")
 
 if __name__ == "__main__":
     main()

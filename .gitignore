@@ -27,3 +27,6 @@ Thumbs.db
 
 # Project specific
 *-touka.png
+
+# Test files
+test_*
