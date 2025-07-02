@@ -7,7 +7,21 @@ import numpy as np
 
 def hex_to_rgb(hex_color):
     """16進数カラーコードをRGBタプルに変換"""
+    # 先頭の#を削除
     hex_color = hex_color.lstrip('#')
+    
+    # 有効な16進数文字のみかチェック
+    if not all(c in '0123456789abcdefABCDEF' for c in hex_color):
+        raise ValueError(f"無効な文字が含まれています: {hex_color}")
+    
+    # 3文字の短縮形式（例: FFF → FFFFFF）
+    if len(hex_color) == 3:
+        hex_color = ''.join([c*2 for c in hex_color])
+    
+    # 6文字でない場合はエラー
+    if len(hex_color) != 6:
+        raise ValueError(f"カラーコードは3文字または6文字である必要があります（現在: {len(hex_color)}文字）")
+    
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 def make_transparent_and_crop(image_path, target_color_rgb, output_path):
@@ -44,17 +58,30 @@ def main():
     # カラーコードを取得（引数がない場合は入力を求める）
     if args.color:
         color_code = args.color
+        # コマンドライン引数の場合、エラーなら終了
+        try:
+            target_color_rgb = hex_to_rgb(color_code)
+        except ValueError as e:
+            print(f"エラー: {e}")
+            print(f"無効なカラーコードです: {color_code}")
+            sys.exit(1)
     else:
-        print("透過にする色のカラーコードを入力してください")
-        print("例: FFFFFF (白), 000000 (黒), FF0000 (赤)")
-        color_code = input("カラーコード: ").strip()
-    
-    # カラーコードをRGBに変換
-    try:
-        target_color_rgb = hex_to_rgb(color_code)
-    except Exception as e:
-        print(f"エラー: 無効なカラーコードです - {color_code}")
-        sys.exit(1)
+        # 対話式モードの場合、正しい入力まで繰り返す
+        while True:
+            print("\n透過にする色のカラーコードを入力してください")
+            print("例: FFFFFF (白), 000000 (黒), FF0000 (赤), FFF (白の短縮形)")
+            color_code = input("カラーコード: ").strip()
+            
+            if not color_code:
+                print("エラー: カラーコードが入力されていません")
+                continue
+            
+            try:
+                target_color_rgb = hex_to_rgb(color_code)
+                break  # 成功したらループを抜ける
+            except ValueError as e:
+                print(f"\nエラー: {e}")
+                print("もう一度入力してください")
     
     print(f"透過色: #{color_code.lstrip('#')} (RGB: {target_color_rgb})")
     
